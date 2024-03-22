@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:shovel_smart_afg/settings.dart';
 import 'package:shovel_smart_afg/template.dart';
-import 'package:shovel_smart_afg/weather.dart';
+import 'package:shovel_smart_afg/weatherPage.dart';
 import 'appState.dart';
 import 'package:provider/provider.dart'; 
+import 'package:shovel_smart_afg/services/weather_services.dart';
+import 'package:shovel_smart_afg/model/weather.dart';
 
 void main() {
   runApp(
@@ -42,7 +46,52 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
- 
+  int currentIndex = 0;
+  
+  WeatherService weatherService = WeatherService();
+  Weather weather = Weather();
+
+  String currentWeather = "";
+  double tempC = 0;
+  double tempF = 0;
+
+   @override
+  void initState() {
+    super.initState();
+    getWeather();
+  }
+
+  void getWeather() async {
+    weather = await weatherService.getWeatherData("01571");
+
+    setState(() {
+      currentWeather = weather.condition;
+      tempF = weather.temperatureF;
+      tempC = weather.temperatureC;
+    });
+    print(weather.temperatureC);
+    print(weather.temperatureF);
+    print(weather.condition);
+  }
+// working on implementing a method to get the user's corrdinates using this tutorial: https://www.youtube.com/watch?v=WVNYG_ESGKo&t=2s
+
+  Future<Position> _getPosition() async{
+    LocationPermission permission; 
+
+    permission = await Geolocator.checkPermission();
+    if(permission == LocationPermission.denied){
+      permission = await Geolocator.requestPermission(); 
+
+      if(permission == LocationPermission.deniedForever){
+        return Future.error("Location not available"); 
+      }
+    } else{
+      print('Location not available'); 
+    }
+
+    return await Geolocator.getCurrentPosition(); 
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -80,18 +129,22 @@ class _MyHomePageState extends State<MyHomePage> {
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-             Builder(
+            /* Builder(
               builder: (context) => ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => weather(),
+                      builder: (context) => weatherPage(),
                     ),
                   );
                 },
                 child: const Text('To weather page'),
               ),
+            ),*/
+
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.05,
             ),
           
           Builder(
@@ -107,10 +160,36 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Text('Settings'),
               ),
             ),
+Text("From the api:"),
+            Text(currentWeather),
+            Text(tempC.toString() + " degrees C"),
+            Text(tempF.toString() + " degrees F"),
           ],
         ),
       ),
-      
+      //credits to HeyFlutter on Youtube for Navigation Bar Tutorial: https://www.youtube.com/watch?v=xoKqQjSDZ60
+      bottomNavigationBar: BottomNavigationBar(
+        type : BottomNavigationBarType.fixed,
+        backgroundColor : Colors.white,
+        unselectedItemColor : const Color.fromRGBO(187, 207, 242, 1),
+        selectedItemColor : const Color.fromRGBO(152, 174, 212, 1),
+        currentIndex : currentIndex,
+        onTap : (index) => setState(() => currentIndex = index),
+        items : [
+          BottomNavigationBarItem (
+            icon: Icon(Icons.home),
+            label: 'Home',
+            backgroundColor : const Color.fromRGBO(187, 207, 242, 1), ), //home navigation button
+          BottomNavigationBarItem (
+            icon: Icon(Icons.cloud),
+            label: 'Weather',
+            backgroundColor : const Color.fromRGBO(187, 207, 242, 1), ), //weather navigation button
+          BottomNavigationBarItem (
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+            backgroundColor : const Color.fromRGBO(187, 207, 242, 1), ), //settings navigation button
+        ],
+      )
     );
   }
 }
